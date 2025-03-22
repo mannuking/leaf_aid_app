@@ -218,13 +218,14 @@ class _CameraScreenState extends State<CameraScreen> {
       final savedImage = await imageFile.copy(path.join(appDir.path, fileName));
 
       // Save scan result to MongoDB
-      await MongoDBService.saveScanResult(
-        userId: widget.userId,
-        imagePath: savedImage.path,
-        diseaseName: diseaseName,
-        confidence: maxProbability,
-        location: position,
-      );
+      await MongoDBService.saveScanResult({
+        'userId': widget.userId,
+        'plantName': diseaseName,
+        'diseaseDetected': diseaseName,
+        'confidence': maxProbability,
+        'imageUrl': savedImage.path,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
 
       if (mounted) {
         Navigator.push(

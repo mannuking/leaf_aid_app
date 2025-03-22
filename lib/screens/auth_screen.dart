@@ -111,7 +111,7 @@ class _AuthScreenState extends State<AuthScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomeScreen(userId: userData['id'], toggleDarkMode: (bool value) {}), // TODO: Manage dark mode state higher up in the widget tree.
+              builder: (context) => HomeScreen(userId: userData['id']),
             ),
           );
         }
@@ -154,7 +154,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(userId: userData['id'], toggleDarkMode: (bool value) {}), // TODO: Manage dark mode state higher up in the widget tree.
+            builder: (context) => HomeScreen(userId: userData['id']),
           ),
         );
       }
@@ -358,7 +358,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => HomeScreen(userId: 'debug_user', toggleDarkMode: (bool value) {}), // TODO: Manage dark mode state higher up in the widget tree.
+                              builder: (context) => const HomeScreen(userId: 'debug_user'),
                             ),
                           );
                         },
@@ -391,7 +391,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(userId: userData['id'], toggleDarkMode: (bool value) {}), // TODO: Manage dark mode state higher up in the widget tree.
+            builder: (context) => HomeScreen(userId: userData['id']),
           ),
         );
       }
@@ -413,7 +413,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(userId: userData['id'], toggleDarkMode: (bool value) {}), // TODO: Manage dark mode state higher up in the widget tree.
+            builder: (context) => HomeScreen(userId: userData['id']),
           ),
         );
       }

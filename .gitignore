@@ -152,3 +152,6 @@ assets/models/*.lite
 !assets/images/*.jpeg
 !assets/icons/*.png
 !assets/icons/*.jpg 
+
+
+/backend/venv

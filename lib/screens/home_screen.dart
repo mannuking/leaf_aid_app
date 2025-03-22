@@ -1,226 +1,199 @@
 import 'package:flutter/material.dart';
-import 'camera_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
+import 'disease_guide_screen.dart';
+import 'tips_screen.dart';
 import 'history_screen.dart';
+// Corrected import
+import 'chat_screen.dart';
 import 'profile_screen.dart';
-import '../services/mongodb_service.dart';
-import '../config/app_config.dart';
-import 'package:mongo_dart/mongo_dart.dart' show where; // Corrected import
+import 'camera_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   final String userId;
-  final Function(bool) toggleDarkMode;
 
-  const HomeScreen({super.key, required this.userId, required this.toggleDarkMode});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  bool _isLoading = true;
-  bool _isDarkMode = false;
-
-  Future<Map<String, dynamic>?> _getUserData(String userId) async {
-    try {
-      await MongoDBService.connect();
-      final usersCollection = MongoDBService.db!.collection(AppConfig.usersCollection); // Corrected _db access
-      final userData = await usersCollection.findOne(where.eq('userId', userId));
-      return userData;
-    } catch (e) {
-      print('Error fetching user data: $e');
-      return null;
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _simulateLoading();
-  }
-
-  Future<void> _simulateLoading() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _toggleDarkMode(bool value) {
-    setState(() {
-      _isDarkMode = value;
-    });
-    widget.toggleDarkMode(value);
-  }
+  const HomeScreen({
+    Key? key,
+    required this.userId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
     return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 150,
-                  floating: true,
-                  pinned: true,
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: const Text(
-                      'Plant Disease Detector',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.green.shade700,
-                            Colors.green.shade400,
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.local_florist,
-                          size: 80,
-                          color: Colors.white,
-                        ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor,
                       ),
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FutureBuilder<Map<String, dynamic>?>(
-                          future: _getUserData(widget.userId),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Text(
-                                'Welcome, User',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              );
-                            }
-
-                            if (snapshot.hasError || !snapshot.hasData || snapshot.data!['email'] == null) {
-                              return const Text(
-                                'Welcome, User',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              );
-                            }
-
-                            // Extract username from email
-                            String email = snapshot.data!['email'];
-                            String username = email.substring(0, email.indexOf('@'));
-
-                            return Text(
-                              'Welcome, $username',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Detect plant diseases instantly and get expert recommendations',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.eco,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Plant Disease Detector',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ],
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(userId: userId),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        _buildFeatureGrid(),
-                      ],
-                    ),
+                        child: CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          child: Icon(
+                            Icons.person,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Welcome, User',
+                    style: Theme.of(context).textTheme.displayMedium,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Detect plant diseases instantly and get expert recommendations',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: GridView.count(
+                    padding: const EdgeInsets.all(16),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    children: [
+                      _buildFeatureCard(
+                        context,
+                        'Scan History',
+                        Icons.history,
+                        Colors.blue,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HistoryScreen(userId: userId),
+                          ),
+                        ),
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        'Disease Guide',
+                        Icons.menu_book,
+                        Colors.orange,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiseaseGuideScreen(),
+                          ),
+                        ),
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        'Tips & Tricks',
+                        Icons.lightbulb,
+                        Colors.purple,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TipsScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 80), // Space for floating buttons
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CameraScreen(userId: widget.userId),
-          ),
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SizedBox(
+                  width: 200, // Fixed width for the scan button
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CameraScreen(userId: userId),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Scan Now'),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: FloatingActionButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChatScreen(),
+                  ),
+                ),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: Image.asset(
+                  'assets/icons/chatbot.png',
+                  width: 32,
+                  height: 32,
+                ),
+              ),
+            ),
+          ],
         ),
-        label: const Text('Scan Now'),
-        icon: const Icon(Icons.camera_alt),
       ),
     );
   }
 
-  Widget _buildFeatureGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      children: [
-        _buildFeatureCard(
-          'Scan History',
-          'View your previous scans',
-          Colors.blue,
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HistoryScreen(userId: widget.userId),
-            ),
-          ),
-        ),
-        _buildFeatureCard(
-          'Profile',
-          'Manage your account',
-          Colors.green,
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProfileScreen(userId: widget.userId),
-            ),
-          ),
-        ),
-        _buildFeatureCard(
-          'Disease Guide',
-          'Learn about plant diseases',
-          Colors.orange,
-          () {
-            // TODO: Implement disease guide
-          },
-        ),
-        _buildFeatureCard(
-          'Tips & Tricks',
-          'Farming best practices',
-          Colors.purple,
-          () {
-            // TODO: Implement tips and tricks
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildFeatureCard(
+    BuildContext context,
     String title,
-    String subtitle,
+    IconData icon,
     Color color,
     VoidCallback onTap,
   ) {
@@ -232,50 +205,45 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withOpacity(0.8),
-                color,
-              ],
-            ),
-          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.local_florist,
-                size: 60,
-                color: Colors.white,
+                icon,
+                size: 48,
+                color: color,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                _getFeatureDescription(title),
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 12,
-                ),
-                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _getFeatureDescription(String title) {
+    switch (title) {
+      case 'Scan History':
+        return 'View your previous scans';
+      case 'Disease Guide':
+        return 'Learn about plant diseases';
+      case 'Tips & Tricks':
+        return 'Farming best practices';
+      default:
+        return '';
+    }
   }
 }

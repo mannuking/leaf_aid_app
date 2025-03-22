@@ -68,9 +68,10 @@ class HistoryScreen extends StatelessWidget {
             itemCount: scans.length,
             itemBuilder: (context, index) {
               final scan = scans[index];
-              final timestamp = scan['timestamp'] as DateTime;
-              final location = scan['location']['coordinates'] as List;
-              final isHealthy = scan['diseaseName'].toString().toLowerCase().contains('healthy');
+              final timestamp = scan['createdAt'] != null 
+                  ? DateTime.tryParse(scan['createdAt'].toString()) 
+                  : DateTime.now();
+              final isHealthy = (scan['diseaseDetected'] ?? '').toString().toLowerCase().contains('healthy');
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -81,22 +82,31 @@ class HistoryScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(scan['imagePath']),
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
+                          if (scan['imageUrl'] != null)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(scan['imageUrl']),
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.image_not_supported),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  scan['diseaseName'].toString().replaceAll('_', ' '),
+                                  (scan['diseaseDetected'] ?? 'Unknown').toString().replaceAll('_', ' '),
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -105,7 +115,7 @@ class HistoryScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Confidence: ${(scan['confidence'] * 100).toStringAsFixed(2)}%',
+                                  'Confidence: ${((scan['confidence'] ?? 0.0) * 100).toStringAsFixed(2)}%',
                                   style: const TextStyle(
                                     color: Colors.grey,
                                   ),
@@ -121,18 +131,7 @@ class HistoryScreen extends StatelessWidget {
                           const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
                           const SizedBox(width: 8),
                           Text(
-                            DateFormat('MMM d, yyyy h:mm a').format(timestamp),
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Lat: ${location[1].toStringAsFixed(4)}, Long: ${location[0].toStringAsFixed(4)}',
+                            DateFormat('MMM d, yyyy h:mm a').format(timestamp ?? DateTime.now()),
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
