@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/mongodb_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/plant_stats_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ScanHistory {
   final String imagePath;
@@ -31,119 +34,160 @@ class ScanHistory {
       );
 }
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   final String userId;
 
   const HistoryScreen({Key? key, required this.userId}) : super(key: key);
 
   @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  List<ScanResult> _scanResults = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScanHistory();
+  }
+
+  Future<void> _loadScanHistory() async {
+    // Here you would typically load the scan history from your backend or local storage
+    // For now, we'll use the example scans you provided
+    setState(() {
+      _scanResults = [
+        ScanResult(
+          image: 'path_to_image1',
+          result: 'Background without leaves',
+          confidence: 99.97,
+          timestamp: DateTime(2025, 3, 24, 15, 18),
+          isHealthy: false,
+        ),
+        ScanResult(
+          image: 'path_to_image2',
+          result: 'Apple healthy',
+          confidence: 93.68,
+          timestamp: DateTime(2025, 3, 24, 15, 19),
+          isHealthy: true,
+        ),
+      ];
+    });
+
+    // Update plant stats based on scan results
+    final plantStats = Provider.of<PlantStatsProvider>(context, listen: false);
+    for (var scan in _scanResults) {
+      if (scan.result.toLowerCase() != 'background without leaves') {
+        await plantStats.updateStats(isHealthy: scan.isHealthy);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan History'),
-        centerTitle: true,
+        title: Text(
+          'Scan History',
+          style: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: MongoDBService.getUserScans(userId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _scanResults.length,
+        itemBuilder: (context, index) {
+          final scan = _scanResults[index];
+          final isHealthyPlant = scan.result.toLowerCase().contains('healthy');
+          final isBackground = scan.result.toLowerCase().contains('background');
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          }
-
-          final scans = snapshot.data ?? [];
-          if (scans.isEmpty) {
-            return const Center(
-              child: Text('No scan history available'),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: scans.length,
-            itemBuilder: (context, index) {
-              final scan = scans[index];
-              final timestamp = scan['createdAt'] != null 
-                  ? DateTime.tryParse(scan['createdAt'].toString()) 
-                  : DateTime.now();
-              final isHealthy = (scan['diseaseDetected'] ?? '').toString().toLowerCase().contains('healthy');
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (scan['imageUrl'] != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                File(scan['imageUrl']),
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 80,
-                                    height: 80,
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.image_not_supported),
-                                  );
-                                },
-                              ),
-                            ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  (scan['diseaseDetected'] ?? 'Unknown').toString().replaceAll('_', ' '),
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: isHealthy ? Colors.green : Colors.red,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Confidence: ${((scan['confidence'] ?? 0.0) * 100).toStringAsFixed(2)}%',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          Text(
-                            DateFormat('MMM d, yyyy h:mm a').format(timestamp ?? DateTime.now()),
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Image placeholder
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isBackground ? Icons.image_not_supported : 
+                      isHealthyPlant ? Icons.check_circle : Icons.warning,
+                      color: isBackground ? Colors.grey :
+                      isHealthyPlant ? Colors.green : Colors.orange,
+                      size: 32,
+                    ),
                   ),
-                ),
-              );
-            },
+                  const SizedBox(width: 16),
+                  // Scan details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          scan.result,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: isBackground ? Colors.grey :
+                            isHealthyPlant ? Colors.green : Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Confidence: ${scan.confidence.toStringAsFixed(2)}%',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${scan.timestamp.toString().split('.')[0]}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
     );
   }
+}
+
+class ScanResult {
+  final String image;
+  final String result;
+  final double confidence;
+  final DateTime timestamp;
+  final bool isHealthy;
+
+  ScanResult({
+    required this.image,
+    required this.result,
+    required this.confidence,
+    required this.timestamp,
+    required this.isHealthy,
+  });
 } 

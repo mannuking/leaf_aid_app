@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/plant_stats_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'settings_screen.dart';
+import 'theme_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -12,8 +16,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _userName = 'Farmer Name';
-  String _userEmail = '';
+  String _userName = 'Plant Lover';
+  String _userEmail = 'user@example.com';
+  String _bio = 'Passionate about plants and gardening 🌱';
 
   @override
   void initState() {
@@ -24,230 +29,171 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userName = prefs.getString('userName') ?? 'Farmer Name';
-      _userEmail = prefs.getString('userEmail') ?? '';
+      _userName = prefs.getString('userName') ?? 'Plant Lover';
+      _userEmail = prefs.getString('userEmail') ?? 'user@example.com';
+      _bio = prefs.getString('bio') ?? 'Passionate about plants and gardening 🌱';
     });
   }
 
-  Future<void> _editProfile() async {
-    final result = await showDialog<Map<String, String>>(
+  Widget _buildStatCard(String title, int value, IconData icon, {Color? iconColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: iconColor ?? Theme.of(context).primaryColor,
+            size: 32,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value.toString(),
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileOption(String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: Theme.of(context).primaryColor),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+      onTap: onTap,
+    );
+  }
+
+  Future<void> _showEditProfile() async {
+    await showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: Column(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Edit Profile',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
             TextField(
+              controller: TextEditingController(text: _userName),
               decoration: const InputDecoration(
                 labelText: 'Name',
-                hintText: 'Enter your name',
+                border: OutlineInputBorder(),
               ),
-              controller: TextEditingController(text: _userName),
               onChanged: (value) => _userName = value,
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: TextEditingController(text: _userEmail),
               decoration: const InputDecoration(
                 labelText: 'Email',
-                hintText: 'Enter your email',
+                border: OutlineInputBorder(),
               ),
-              controller: TextEditingController(text: _userEmail),
               onChanged: (value) => _userEmail = value,
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, {
-              'name': _userName,
-              'email': _userEmail,
-            }),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userName', result['name']!);
-      await prefs.setString('userEmail', result['email']!);
-      setState(() {
-        _userName = result['name']!;
-        _userEmail = result['email']!;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
-      }
-    }
-  }
-
-  Future<void> _changePassword() async {
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change Password'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+            const SizedBox(height: 16),
             TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                hintText: 'Enter current password',
+              controller: TextEditingController(text: _bio),
+              decoration: const InputDecoration(
+                labelText: 'Bio',
+                border: OutlineInputBorder(),
               ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'New Password',
-                hintText: 'Enter new password',
-              ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirm New Password',
-                hintText: 'Confirm new password',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // TODO: Implement password change logic
-              Navigator.pop(context, {'status': 'success'});
-            },
-            child: const Text('Change'),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed successfully')),
-      );
-    }
-  }
-
-  Future<void> _showHelpCenter() async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help Center'),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Frequently Asked Questions',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('1. How do I scan a plant?'),
-              Text('2. How accurate is the disease detection?'),
-              Text('3. Can I use the app offline?'),
-              SizedBox(height: 16),
-              Text(
-                'Contact Support',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('Email: support@plantdisease.com'),
-              Text('Phone: +1 (555) 123-4567'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showContactUs() async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Contact Us'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Subject',
-                hintText: 'Enter subject',
-              ),
-            ),
-            SizedBox(height: 16),
-            TextField(
               maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Message',
-                hintText: 'Enter your message',
+              onChanged: (value) => _bio = value,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('userName', _userName);
+                  await prefs.setString('userEmail', _userEmail);
+                  await prefs.setString('bio', _bio);
+                  setState(() {});
+                  if (mounted) Navigator.pop(context);
+                },
+                child: const Text('Save Changes'),
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // TODO: Implement contact form submission
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Message sent successfully')),
-              );
-            },
-            child: const Text('Send'),
-          ),
-        ],
       ),
     );
   }
 
-  Future<void> _showAboutApp() async {
+  Future<void> _showNotifications() async {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About App'),
-        content: const Column(
+        title: Text(
+          'Notifications',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Plant Disease Detector',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            SwitchListTile(
+              title: const Text('Push Notifications'),
+              value: true,
+              onChanged: (value) {},
             ),
-            SizedBox(height: 8),
-            Text('Version 1.0.0'),
-            SizedBox(height: 16),
-            Text(
-              'An AI-powered app to detect and diagnose plant diseases instantly.',
-              textAlign: TextAlign.center,
+            SwitchListTile(
+              title: const Text('Email Notifications'),
+              value: false,
+              onChanged: (value) {},
             ),
-            SizedBox(height: 16),
-            Text('© 2024 Plant Disease Detector'),
           ],
         ),
         actions: [
@@ -260,11 +206,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _logout() async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _showPrivacy() async {
+    await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
+        title: Text(
+          'Privacy Settings',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              title: const Text('Profile Visibility'),
+              subtitle: const Text('Make profile public'),
+              value: true,
+              onChanged: (value) {},
+            ),
+            SwitchListTile(
+              title: const Text('Location Services'),
+              subtitle: const Text('Share location data'),
+              value: false,
+              onChanged: (value) {},
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showHelpSupport() async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Help & Support',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contact Support',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('Email: support@irisidea.tech'),
+            const Text('Phone: +1 (555) 123-4567'),
+            const SizedBox(height: 16),
+            Text(
+              'About LeafAid',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('Version: 1.0.0'),
+            const SizedBox(height: 8),
+            const Text('© 2024 IrisIdea TechSolutions'),
+            const Text('All rights reserved.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLogoutConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Logout',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
@@ -273,145 +304,209 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
             child: const Text('Logout'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
-      // TODO: Implement logout logic
-      Navigator.of(context).pushReplacementNamed('/login');
+    if (result == true && mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      Navigator.pushReplacementNamed(context, '/');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final plantStats = Provider.of<PlantStatsProvider>(context);
+    
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Profile Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 50, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _userName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Theme.of(context).primaryColor,
+                          child: CircleAvatar(
+                            radius: 47,
+                            backgroundColor: Colors.white,
+                            child: Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.edit,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    'ID: ${widget.userId}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.edit),
-                    title: const Text('Edit Profile'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _editProfile,
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.lock),
-                    title: const Text('Change Password'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _changePassword,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.settings),
-                    title: const Text('Settings'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
+                    const SizedBox(height: 16),
+                    Text(
+                      _userName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.help),
-                    title: const Text('Help Center'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _showHelpCenter,
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.contact_support),
-                    title: const Text('Contact Us'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _showContactUs,
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.info),
-                    title: const Text('About App'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _showAboutApp,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton(
-                onPressed: _logout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  minimumSize: const Size(double.infinity, 50),
+                    Text(
+                      _userEmail,
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _bio,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Text('Logout'),
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
+
+              // Stats Section
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Total\nPlants',
+                        plantStats.totalPlants,
+                        Icons.eco,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Healthy\nPlants',
+                        plantStats.healthyPlants,
+                        Icons.check_circle,
+                        iconColor: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Diseased\nPlants',
+                        plantStats.diseasedPlants,
+                        Icons.warning_rounded,
+                        iconColor: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Options Section
+              Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildProfileOption(
+                      'Edit Profile',
+                      Icons.edit,
+                      _showEditProfile,
+                    ),
+                    const Divider(),
+                    _buildProfileOption(
+                      'Appearance',
+                      Icons.palette,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ThemeScreen()),
+                      ),
+                    ),
+                    const Divider(),
+                    _buildProfileOption(
+                      'Notifications',
+                      Icons.notifications,
+                      _showNotifications,
+                    ),
+                    const Divider(),
+                    _buildProfileOption(
+                      'Privacy',
+                      Icons.lock,
+                      _showPrivacy,
+                    ),
+                    const Divider(),
+                    _buildProfileOption(
+                      'Help & Support',
+                      Icons.help,
+                      _showHelpSupport,
+                    ),
+                    const Divider(),
+                    _buildProfileOption(
+                      'Logout',
+                      Icons.logout,
+                      _showLogoutConfirmation,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Copyright
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '© 2024 IrisIdea TechSolutions\nAll rights reserved.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
