@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/gemini_service.dart';
-import '../config/app_config.dart';
+import 'dart:async';
 
 class Message {
   final String text;
@@ -27,22 +27,106 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isComposing = false;
   bool _isLoading = false;
   bool _isError = false;
+  String _errorMessage = '';
+  Timer? _reconnectTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeChat();
   }
+  
+  @override
+  void dispose() {
+    _reconnectTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _initializeChat() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+      _errorMessage = '';
+    });
+    
     try {
+      print('Initializing chat and testing connection...');
       final isConnected = await GeminiService.testConnection();
-      setState(() => _isError = !isConnected);
+      
+      if (!isConnected) {
+        print("Connection test returned false - server might be unreachable");
+        setState(() {
+          _isError = true;
+          _errorMessage = 'Unable to connect to the server. Please check if the backend is running.';
+        });
+        
+        // Schedule periodic reconnection attempts
+        _reconnectTimer?.cancel();
+        _reconnectTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+          print("Attempting automatic reconnection...");
+          _retryConnection();
+        });
+      } else {
+        print("Connection test successful");
+        setState(() {
+          _isError = false;
+          _errorMessage = '';
+        });
+        
+        // Cancel reconnect timer if it exists
+        _reconnectTimer?.cancel();
+        
+        if (_messages.isEmpty) {
+          // Add a welcome message when successfully connected
+          setState(() {
+            _messages.insert(0, Message(
+              text: 'Hello! I\'m your Plant Care Assistant. How can I help you today?',
+              isUser: false,
+            ));
+          });
+        }
+      }
     } catch (e) {
-      setState(() => _isError = true);
+      print('Error during initialization: $e');
+      setState(() {
+        _isError = true;
+        _errorMessage = 'Error: ${e.toString()}';
+      });
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _retryConnection() async {
+    try {
+      final isConnected = await GeminiService.testConnection();
+      if (isConnected && mounted) {
+        setState(() {
+          _isError = false;
+          _errorMessage = '';
+        });
+        
+        _reconnectTimer?.cancel();
+        
+        // Add a reconnected message
+        if (_messages.isEmpty) {
+          setState(() {
+            _messages.insert(0, Message(
+              text: 'Hello! I\'m your Plant Care Assistant. How can I help you today?',
+              isUser: false,
+            ));
+          });
+        } else {
+          setState(() {
+            _messages.insert(0, Message(
+              text: 'I\'m back online and ready to help!',
+              isUser: false,
+            ));
+          });
+        }
+      }
+    } catch (e) {
+      print('Auto-reconnect attempt failed: $e');
     }
   }
 
@@ -61,26 +145,36 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final response = await GeminiService.generateResponse(text);
-      setState(() {
-        _messages.insert(0, Message(
-          text: response,
-          isUser: false,
-        ));
-        _isError = false;
-      });
+      if (mounted) {
+        setState(() {
+          _messages.insert(0, Message(
+            text: response,
+            isUser: false,
+          ));
+          _isError = false;
+        });
+      }
     } catch (e) {
       print('Error generating response: $e');
-      setState(() {
-        _isError = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to get response. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      });
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to get response: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: () => _initializeChat(),
+              ),
+            ),
+          );
+        });
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -90,6 +184,13 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: const Text('Plant Care Assistant'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _initializeChat,
+            tooltip: 'Reconnect to server',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -97,19 +198,35 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               color: Colors.red.withOpacity(0.1),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Connection error. Please check your internet connection.',
-                      style: TextStyle(color: Colors.red),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Connection error: $_errorMessage',
+                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: _initializeChat,
-                    child: const Text('Retry'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Trying to connect to: ${GeminiService.baseUrl}',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: _initializeChat,
+                        child: const Text('Retry Connection'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -235,4 +352,4 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-} 
+}

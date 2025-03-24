@@ -8,8 +8,19 @@ import 'screens/profile_screen.dart';
 import 'screens/auth_screen.dart';
 import 'providers/theme_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Force the app to allow cleartext (non-HTTPS) traffic
+  // This is important for development when using HTTP
+  // In production, you should use HTTPS instead
+  await SystemChannels.platform.invokeMethod(
+    'SystemConfiguration.setAllowsArbitraryLoads',
+    true,
+  );
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -207,5 +218,5 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
-} 
+}
 

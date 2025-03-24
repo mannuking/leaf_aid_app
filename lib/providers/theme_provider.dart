@@ -55,7 +55,7 @@ class ThemeProvider with ChangeNotifier {
           fontWeight: FontWeight.bold,
         ),
       ),
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: Colors.green,
         secondary: Colors.greenAccent,
         surface: Colors.white,

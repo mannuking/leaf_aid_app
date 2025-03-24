@@ -155,3 +155,6 @@ assets/models/*.lite
 
 
 /backend/venv
+
+# Sensitive configuration
+lib/config.dart
