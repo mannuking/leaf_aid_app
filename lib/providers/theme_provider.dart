@@ -36,7 +36,6 @@ class ThemeProvider extends ChangeNotifier {
         primary: const Color(0xFF4CAF50),
         secondary: const Color(0xFF4CAF50).withOpacity(0.8),
         surface: Colors.white,
-        background: Colors.grey[50]!,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -76,7 +75,6 @@ class ThemeProvider extends ChangeNotifier {
         primary: const Color(0xFF4CAF50),
         secondary: const Color(0xFF4CAF50).withOpacity(0.8),
         surface: const Color(0xFF1E1E1E),
-        background: const Color(0xFF121212),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,

@@ -29,6 +29,7 @@ dependencies:
   flutter_markdown: ^0.6.18
   url_launcher: ^6.2.3
   google_generative_ai: ^0.3.2
+  flutter_html: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -61,3 +62,12 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icons/app_icon.png"
   min_sdk_android: 21
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false
+  ios_content_mode: center
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"

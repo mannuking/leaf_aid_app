@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
 import '../services/gemini_chat_service.dart';
 import 'dart:async';
 
@@ -124,12 +125,19 @@ class _ChatScreenState extends State<ChatScreen> {
                     : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                message.text,
-                style: TextStyle(
-                  color: message.isUser ? Colors.white : null,
-                ),
-              ),
+              child: message.isUser
+                  ? Text(
+                      message.text,
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    )
+                  : Html(
+                      data: message.text,
+                      style: {
+                        'body': Style(color: Colors.black), // Adjust text color as needed
+                      },
+                    ),
             ),
           ),
           if (message.isUser) ...[

@@ -157,7 +157,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${scan.timestamp.toString().split('.')[0]}',
+                          scan.timestamp.toString().split('.')[0],
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             color: Colors.grey,

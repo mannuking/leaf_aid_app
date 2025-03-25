@@ -39,7 +39,7 @@ class GeminiService {
         final response = await http.get(
           Uri.parse('$url/test'),
           headers: {'Accept': 'application/json'},
-        ).timeout(Duration(seconds: _timeoutSeconds));
+        ).timeout(const Duration(seconds: _timeoutSeconds));
         
         if (response.statusCode == 200) {
           print('Connection successful to: $url');

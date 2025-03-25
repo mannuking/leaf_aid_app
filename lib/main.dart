@@ -41,7 +41,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
   String? _userId;
 
   @override

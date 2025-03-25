@@ -102,7 +102,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final Map<String, dynamic> userData;
       
       if (_isLogin) {
-        userData = await ClerkService.signInWithEmail(
+        userData = await ClerkService.signInWithEmailPassword(
           _emailController.text,
           _passwordController.text,
         );
@@ -117,9 +117,9 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       } else {
         userData = await ClerkService.signUp(
-          name: _nameController.text,
           email: _emailController.text,
           password: _passwordController.text,
+          name: _nameController.text,
         );
         _showSuccess('Please check your email for verification code');
         setState(() {

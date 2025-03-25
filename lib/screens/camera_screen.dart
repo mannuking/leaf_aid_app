@@ -45,7 +45,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _initializeDatabase() async {
     try {
-      await MongoDBService.connect();
+      await MongoDBService.initialize();
       if (mounted) {
         setState(() => _isDbInitialized = MongoDBService.isInitialized);
       }
